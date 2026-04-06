@@ -1172,7 +1172,7 @@ function isSquareAttacked(b,row,col,byColor){for(let r=0;r<8;r++)for(let c=0;c<8
 function getRawMoves(b,r,c,piece,includeCastle=true,ep=enPassantTarget){
   const moves=[],type=piece.toLowerCase(),white=isWhite(piece),dir=white?-1:1;
   switch(type){
-    case'p':if(b[r+dir]&&!b[r+dir][c]){moves.push([r+dir,c]);const sr=white?6:1;if(r===sr&&!b[r+2*dir][c])moves.push([r+2*dir,c]);}for(const dc of[-1,1]){const nr=r+dir,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8){if(b[nr][nc]&&isWhite(b[nr][nc])!==white)moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc)moves.push([nr,nc]);}}break;
+    case'p':if(b[r+dir]&&!b[r+dir][c]){moves.push([r+dir,c]);const sr=white?6:1;if(r===sr&&!b[r+2*dir][c])moves.push([r+2*dir,c]);}for(const dc of[-1,1]){const nr=r+dir,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8){if(b[nr][nc]&&isWhite(b[nr][nc])!==white)moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc){const epVictim=b[r][nc];if(epVictim&&isWhite(epVictim)!==white)moves.push([nr,nc]);}}}break;
     case'n':for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&(!b[nr][nc]||isWhite(b[nr][nc])!==white))moves.push([nr,nc]);}break;
     case'b':for(const d of[[-1,-1],[-1,1],[1,-1],[1,1]])slideMoves(b,r,c,d[0],d[1],white,moves);break;
     case'r':for(const d of[[-1,0],[1,0],[0,-1],[0,1]])slideMoves(b,r,c,d[0],d[1],white,moves);break;
@@ -1293,9 +1293,16 @@ function performUndo(){
   moveLog.pop();rebuildMoveLog();render();updateCaptured();updateStatus();triggerHint();
 }
 function undoMove(){performUndo();if(gameMode==='online')sendData({type:'undo'});}
+let gameCount = 0;
+
 function swapSides() {
   if (gameMode !== 'online') return;
-  mySide = mySide === 'white' ? 'black' : 'white';
+  gameCount++;
+  if (gameCount % 2 === 1) {
+    mySide = isHost ? 'black' : 'white';
+  } else {
+    mySide = isHost ? 'white' : 'black';
+  }
   document.getElementById('badge-bottom').classList.toggle('show', mySide === 'white');
   document.getElementById('badge-top').classList.toggle('show', mySide === 'black');
 }
@@ -1761,7 +1768,7 @@ function inCheck(b,color){const k=color==='white'?'K':'k',kp=findK(k,b);if(!kp)r
 function rawMoves(b,r,c,piece,castle,ep){
   const moves=[],type=piece.toLowerCase(),white=isW(piece),dir=white?-1:1;
   switch(type){
-    case'p':if(b[r+dir]&&!b[r+dir][c]){moves.push([r+dir,c]);const sr=white?6:1;if(r===sr&&!b[r+2*dir][c])moves.push([r+2*dir,c]);}for(const dc of[-1,1]){const nr=r+dir,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8){if(b[nr][nc]&&isW(b[nr][nc])!==white)moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc)moves.push([nr,nc]);}}break;
+    case'p':if(b[r+dir]&&!b[r+dir][c]){moves.push([r+dir,c]);const sr=white?6:1;if(r===sr&&!b[r+2*dir][c])moves.push([r+2*dir,c]);}for(const dc of[-1,1]){const nr=r+dir,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8){if(b[nr][nc]&&isW(b[nr][nc])!==white)moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc){const epV=b[r][nc];if(epV&&isW(epV)!==white)moves.push([nr,nc]);}}}break;
     case'n':for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&(!b[nr][nc]||isW(b[nr][nc])!==white))moves.push([nr,nc]);}break;
     case'b':for(const d of[[-1,-1],[-1,1],[1,-1],[1,1]])slide(b,r,c,d[0],d[1],white,moves);break;
     case'r':for(const d of[[-1,0],[1,0],[0,-1],[0,1]])slide(b,r,c,d[0],d[1],white,moves);break;
