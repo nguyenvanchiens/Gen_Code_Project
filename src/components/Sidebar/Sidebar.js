@@ -65,7 +65,7 @@ function Sidebar({ activeTool, onToolChange, collapsed, onToggle }) {
           onDoubleClick={() => onToolChange('arcade')}
           title=""
         >
-          {!collapsed ? 'v1.0.3' : '·'}
+          {!collapsed ? 'v1.0.4' : '·'}
         </span>
       </div>
     </aside>

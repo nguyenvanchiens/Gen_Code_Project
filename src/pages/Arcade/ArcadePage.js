@@ -5,6 +5,7 @@ const PASSCODE = '123456';
 
 const GAMES = [
   { id: 'chess', name: 'Chess Online', icon: '♟', description: 'Cờ vua online P2P', src: '/games/chess.html' },
+  { id: 'caro', name: 'Caro Online', icon: '⭕', description: 'Cờ caro online với bạn bè', src: '/games/caro.html' },
 ];
 
 function ArcadePage() {

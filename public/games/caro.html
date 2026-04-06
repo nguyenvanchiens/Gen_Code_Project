@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caro Online</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;justify-content:center;align-items:center}
+.lobby-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:200;display:flex;justify-content:center;align-items:center}
+.lobby-overlay.hidden{display:none}
+.lobby{background:#16213e;border-radius:16px;padding:36px 32px;width:400px;max-width:92vw;text-align:center;border:1px solid#0f3460}
+.lobby h1{font-size:32px;font-weight:800;color:#e94560;margin-bottom:4px}
+.lobby .subtitle{color:#666;font-size:13px;margin-bottom:24px}
+.lobby-btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px;font-family:inherit;transition:all .2s}
+.lobby-btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-create{background:#e94560;color:#fff}
+.btn-join{background:#0f3460;color:#fff}
+.btn-local{background:#533483;color:#fff}
+.btn-bot{background:#16c79a;color:#fff}
+.lobby-section{margin-top:20px;display:none}
+.lobby-section.active{display:block}
+.room-code-display{font-family:'Courier New',monospace;font-size:28px;font-weight:900;letter-spacing:8px;color:#fff;background:#0f3460;padding:14px;border-radius:10px;margin:12px 0;cursor:pointer;border:1px dashed #e94560}
+.lobby input{width:100%;padding:12px;border-radius:10px;border:1px solid#0f3460;background:#1a1a2e;color:#fff;font-size:18px;text-align:center;letter-spacing:4px;font-family:'Courier New',monospace;font-weight:700;margin:8px 0;outline:none}
+.lobby input:focus{border-color:#e94560}
+.status-msg{font-size:13px;color:#888;margin-top:8px;min-height:18px}
+.status-msg.error{color:#e94560}
+.status-msg.success{color:#16c79a}
+.back-link{color:#555;font-size:12px;cursor:pointer;margin-top:12px;display:inline-block}
+.back-link:hover{color:#aaa}
+.lan-info{margin:10px 0;padding:10px;background:#1a1a2e;border-radius:8px;border:1px solid#0f3460;font-size:13px;color:#16c79a;cursor:pointer}
+.lan-info:hover{border-color:#16c79a}
+.copy-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-50px);background:#16c79a;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:999}
+.copy-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.game-container{display:flex;flex-direction:column;align-items:center;padding:16px}
+.conn-bar{display:none;align-items:center;gap:6px;padding:5px 14px;background:rgba(22,199,154,.15);border-radius:20px;margin-bottom:12px;font-size:12px;color:#16c79a}
+.conn-bar.active{display:flex}
+.conn-bar.disconnected{background:rgba(233,69,96,.15);color:#e94560}
+.conn-dot{width:6px;height:6px;background:#16c79a;border-radius:50%}
+.disconnected .conn-dot{background:#e94560}
+.info-bar{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:600px;margin-bottom:10px;gap:8px}
+.turn-text{font-size:15px;font-weight:700;padding:6px 16px;border-radius:8px;background:#16213e}
+.turn-text.my-turn{color:#16c79a;background:#16c79a22}
+.turn-text.enemy-turn{color:#e94560}
+.score-text{font-size:13px;color:#888;background:#16213e;padding:6px 12px;border-radius:8px}
+.board{display:grid;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.5);background:#0f3460}
+.cell{width:36px;height:36px;display:flex;justify-content:center;align-items:center;cursor:pointer;border:1px solid #1a1a2e;transition:background .15s;font-size:20px;font-weight:800;user-select:none}
+.cell:hover{background:#16213e}
+.cell.x{color:#e94560}
+.cell.o{color:#16c79a}
+.cell.win{animation:winPulse .6s ease infinite alternate}
+@keyframes winPulse{0%{background:#16c79a33}100%{background:#16c79a66}}
+.cell.last{background:#ffffff11}
+.cell.hint::after{content:'';position:absolute;width:6px;height:6px;background:rgba(255,255,255,0.12);border-radius:50%;pointer-events:none}
+.bottom-bar{display:flex;align-items:center;gap:8px;margin-top:12px}
+.game-btn{padding:8px 16px;border:1px solid#0f3460;border-radius:6px;background:#16213e;color:#9b9891;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s}
+.game-btn:hover{background:#0f3460;color:#fff}
+.game-btn.btn-resign{color:#e94560;border-color:#e9456044}
+.game-btn.btn-resign:hover{background:#e9456022;color:#e94560}
+.size-selector{display:flex;gap:6px;margin-bottom:16px;justify-content:center}
+.size-btn{padding:8px 14px;border:1px solid#0f3460;border-radius:8px;background:#1a1a2e;color:#888;font-size:13px;font-weight:600;cursor:pointer}
+.size-btn.active{background:#e94560;color:#fff;border-color:#e94560}
+.win-overlay{position:fixed;inset:0;z-index:60;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,.7);pointer-events:none}
+.win-overlay.active{display:flex;pointer-events:auto}
+.win-box{text-align:center;animation:winBoxIn .5s ease}
+@keyframes winBoxIn{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+.win-icon{font-size:80px;margin-bottom:8px}
+.win-title{font-size:36px;font-weight:900;letter-spacing:4px;margin-bottom:4px}
+.win-title.x-win{color:#e94560}
+.win-title.o-win{color:#16c79a}
+.win-title.draw{color:#eab308}
+.win-sub{font-size:14px;color:#888;margin-bottom:16px}
+.win-box .lobby-btn{width:200px;margin:0 auto}
+@media(max-width:500px){.cell{width:28px;height:28px;font-size:16px}}
+</style>
+</head>
+<body>
+<div class="lobby-overlay" id="lobby-overlay">
+<div class="lobby">
+<h1>CARO</h1>
+<div class="subtitle">Choi caro online voi ban be</div>
+<div id="lobby-menu">
+<button class="lobby-btn btn-create" onclick="showAdminAuth()">Tao phong</button>
+<button class="lobby-btn btn-join" onclick="showJoin()">Vao phong</button>
+</div>
+<div class="lobby-section" id="lobby-admin">
+<p style="color:#888;margin-bottom:8px;font-size:13px">Nhap key de tao phong:</p>
+<input type="password" id="admin-key" placeholder="Key..." autocomplete="off" style="letter-spacing:2px;font-size:15px">
+<button class="lobby-btn btn-create" onclick="verifyAdminKey()" style="margin-top:8px">Xac nhan</button>
+<div class="status-msg" id="admin-status"></div>
+<div class="back-link" onclick="backToMenu()">← Quay lai</div>
+</div>
+<div class="lobby-section" id="lobby-create">
+<p style="color:#888;font-size:13px;margin-bottom:6px">Ma phong:</p>
+<div class="room-code-display" id="room-code" onclick="copyCode()">...</div>
+<div class="lan-info" onclick="copyLink()">📋 Nhan de copy link moi ban be</div>
+<div class="status-msg" id="create-status">Dang tao phong...</div>
+<div class="back-link" onclick="backToMenu()">← Quay lai</div>
+</div>
+<div class="lobby-section" id="lobby-join">
+<p style="color:#888;font-size:13px;margin-bottom:6px">Nhap ma phong:</p>
+<input type="text" id="join-code" placeholder="VD: AX3KNP" maxlength="10" autocomplete="off">
+<button class="lobby-btn btn-join" onclick="joinRoom()" style="margin-top:8px">Ket noi</button>
+<div class="status-msg" id="join-status"></div>
+<div class="back-link" onclick="backToMenu()">← Quay lai</div>
+</div>
+</div>
+</div>
+<div class="copy-toast" id="copy-toast">Da copy!</div>
+<div class="game-container">
+<div class="conn-bar" id="conn-bar"><span class="conn-dot"></span><span id="conn-text">Da ket noi</span></div>
+<div class="info-bar">
+<div class="turn-text" id="turn-text">Luot: X</div>
+<div class="score-text" id="score-text">X: 0 - O: 0</div>
+</div>
+<div class="board" id="board"></div>
+<div class="bottom-bar">
+<button class="game-btn" onclick="undoMove()">↩ Hoan tac</button>
+<button class="game-btn" onclick="toggleHint()" id="hint-btn" style="display:none">💡 Goi y</button>
+<button class="game-btn btn-resign" onclick="resign()">⚑ Xin thua</button>
+<button class="game-btn" onclick="requestNewGame()">Van moi</button>
+</div>
+</div>
+<div class="win-overlay" id="win-overlay" onclick="closeWin()">
+<div class="win-box">
+<div class="win-icon" id="win-icon">🏆</div>
+<div class="win-title" id="win-title">X THANG!</div>
+<div class="win-sub" id="win-sub">5 quan lien tiep</div>
+</div>
+</div>
+
+<script>
+const peerConfig={host:'0.peerjs.com',secure:true,port:443,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},{urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}],iceCandidatePoolSize:10}};
+
+let peer=null,conn=null,gameMode='local',mySide='X',isHost=false;
+let boardSize=20,board=[],turn='X',gameOver=false,moveHistory=[],lastCell=null,winCells=[];
+let scoreX=0,scoreO=0,vsBot=false,hintEnabled=false,hintCell=null,useAI=false;
+const KEY_NO_AI='12345';
+const KEY_WITH_AI='bot123456';
+
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
+function setMsg(id,t,type){const e=document.getElementById(id);e.textContent=t;e.className='status-msg'+(type?' '+type:'')}
+function showToast(m){const t=document.getElementById('copy-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+
+function setSize(s){boardSize=s;document.querySelectorAll('.size-btn').forEach(b=>{b.classList.toggle('active',parseInt(b.textContent)===s)})}
+
+function showAdminAuth(){
+  document.getElementById('lobby-menu').style.display='none';
+  document.getElementById('lobby-admin').classList.add('active');
+  document.getElementById('admin-key').value='';
+  setMsg('admin-status','');
+  document.getElementById('admin-key').focus();
+}
+
+function verifyAdminKey(){
+  const key=document.getElementById('admin-key').value.trim();
+  if(!key){setMsg('admin-status','Nhap key!','error');return}
+  if(key===KEY_WITH_AI){useAI=true}
+  else if(key===KEY_NO_AI){useAI=false}
+  else{setMsg('admin-status','Sai key!','error');document.getElementById('admin-key').value='';return}
+  document.getElementById('lobby-admin').classList.remove('active');
+  showCreate();
+}
+
+function showCreate(){
+  document.getElementById('lobby-menu').style.display='none';
+  document.getElementById('lobby-create').classList.add('active');
+  const code=genCode();
+  if(peer)try{peer.destroy()}catch(e){}
+  peer=new Peer('caro-'+code.toLowerCase(),peerConfig);
+  peer.on('open',()=>{document.getElementById('room-code').textContent=code;setMsg('create-status','Dang cho ban ket noi...');isHost=true;mySide='X'});
+  peer.on('connection',c=>{conn=c;conn.on('open',()=>{setupConn();setMsg('create-status','Da ket noi!','success');conn.send({type:'config',size:boardSize});setTimeout(()=>startOnline(),400)})});
+  peer.on('error',e=>setMsg('create-status','Loi: '+e.type,'error'));
+}
+
+function showJoin(){document.getElementById('lobby-menu').style.display='none';document.getElementById('lobby-join').classList.add('active');document.getElementById('join-code').focus()}
+
+function joinRoom(){
+  const code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!code||code.length<4){setMsg('join-status','Nhap ma phong!','error');return}
+  setMsg('join-status','Dang ket noi...');
+  if(peer)try{peer.destroy()}catch(e){}
+  peer=new Peer('caro-join-'+Math.random().toString(36).substring(2,8),peerConfig);
+  peer.on('open',()=>{conn=peer.connect('caro-'+code.toLowerCase(),{reliable:true});isHost=false;mySide='O';
+    conn.on('open',()=>{setupConn();setMsg('join-status','Da ket noi!','success');setTimeout(()=>startOnline(),400)});
+    conn.on('error',()=>setMsg('join-status','Khong the ket noi!','error'))});
+  peer.on('error',e=>setMsg('join-status','Loi: '+e.type,'error'));
+}
+
+function setupConn(){
+  conn.on('data',d=>{
+    if(d.type==='move')receiveMove(d.r,d.c);
+    else if(d.type==='newgame'){mySide=mySide==='X'?'O':'X';newGame()}
+    else if(d.type==='undo')performUndo();
+    else if(d.type==='resign')endResign(mySide);
+    else if(d.type==='config')boardSize=d.size;
+  });
+  conn.on('close',()=>{document.getElementById('conn-bar').classList.add('disconnected');document.getElementById('conn-text').textContent='Mat ket noi'});
+}
+
+function sendData(d){if(conn&&conn.open)conn.send(d)}
+function startOnline(){gameMode='online';document.getElementById('lobby-overlay').classList.add('hidden');document.getElementById('conn-bar').classList.add('active');if(canUseHint()){hintEnabled=true;document.getElementById('hint-btn').style.background='#eab308';document.getElementById('hint-btn').style.color='#1a1a2e'}else{document.getElementById('hint-btn').style.display='none'}newGame()}
+function startLocal(){gameMode='local';mySide='both';vsBot=false;document.getElementById('lobby-overlay').classList.add('hidden');newGame()}
+function startBot(){gameMode='local';mySide='X';vsBot=true;document.getElementById('lobby-overlay').classList.add('hidden');newGame()}
+function backToMenu(){if(peer){peer.destroy();peer=null}document.getElementById('lobby-menu').style.display='';document.getElementById('lobby-admin').classList.remove('active');document.getElementById('lobby-create').classList.remove('active');document.getElementById('lobby-join').classList.remove('active')}
+function copyToClip(text){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>showToast('Da copy!')).catch(()=>fallbackCopy(text))}else{fallbackCopy(text)}}
+function fallbackCopy(text){const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('Da copy!')}
+function copyCode(){const c=document.getElementById('room-code').textContent;if(c!=='...')copyToClip(c)}
+function copyLink(){copyToClip(location.protocol+'//'+location.host+location.pathname)}
+document.addEventListener('DOMContentLoaded',()=>{document.getElementById('join-code').addEventListener('keypress',e=>{if(e.key==='Enter')joinRoom()});document.getElementById('admin-key').addEventListener('keypress',e=>{if(e.key==='Enter')verifyAdminKey()})});
+
+// ============ GAME ============
+function newGame(){
+  board=[];for(let r=0;r<boardSize;r++){board[r]=[];for(let c=0;c<boardSize;c++)board[r][c]=null}
+  turn='X';gameOver=false;moveHistory=[];lastCell=null;winCells=[];hintCell=null;
+  render();updateStatus();
+  if(hintEnabled)calcHint();
+}
+
+function render(){
+  const el=document.getElementById('board');el.innerHTML='';
+  el.style.gridTemplateColumns=`repeat(${boardSize},1fr)`;
+  for(let r=0;r<boardSize;r++)for(let c=0;c<boardSize;c++){
+    const cell=document.createElement('div');cell.className='cell';
+    if(board[r][c]){cell.textContent=board[r][c];cell.classList.add(board[r][c].toLowerCase())}
+    if(lastCell&&lastCell[0]===r&&lastCell[1]===c)cell.classList.add('last');
+    if(winCells.some(w=>w[0]===r&&w[1]===c))cell.classList.add('win');
+    if(hintEnabled&&hintCell&&hintCell[0]===r&&hintCell[1]===c&&!gameOver)cell.classList.add('hint');
+    cell.addEventListener('click',()=>handleClick(r,c));
+    el.appendChild(cell)
+  }
+}
+
+function isMyTurn(){if(vsBot)return turn==='X';return gameMode==='local'||mySide===turn}
+
+function makeMove(r,c,send){
+  moveHistory.push({r,c,turn});
+  board[r][c]=turn;lastCell=[r,c];
+  if(send&&gameMode==='online')sendData({type:'move',r,c});
+  const w=checkWin(r,c);
+  if(w){winCells=w;gameOver=true;if(turn==='X')scoreX++;else scoreO++;render();updateStatus();showWin(turn);return}
+  if(moveHistory.length===boardSize*boardSize){gameOver=true;render();updateStatus();showWin('draw');return}
+  turn=turn==='X'?'O':'X';hintCell=null;render();updateStatus();
+  if(hintEnabled)calcHint();
+  if(vsBot&&turn==='O'&&!gameOver)setTimeout(botMove,200);
+}
+
+function receiveMove(r,c){if(!gameOver&&!board[r][c])makeMove(r,c,false)}
+
+function checkWin(r,c){
+  const p=board[r][c],dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(const[dr,dc]of dirs){
+    let cells=[[r,c]];
+    for(let i=1;i<5;i++){const nr=r+dr*i,nc=c+dc*i;if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize&&board[nr][nc]===p)cells.push([nr,nc]);else break}
+    for(let i=1;i<5;i++){const nr=r-dr*i,nc=c-dc*i;if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize&&board[nr][nc]===p)cells.push([nr,nc]);else break}
+    if(cells.length>=5)return cells;
+  }
+  return null;
+}
+
+function updateStatus(){
+  const el=document.getElementById('turn-text');
+  if(gameOver){
+    if(winCells.length)el.textContent=`${turn} thang!`;
+    else el.textContent='Hoa!';
+    el.className='turn-text';
+  }else{
+    let t=`Luot: ${turn}`;
+    if(gameMode==='online')t+=isMyTurn()?' - Ban di':' - Cho doi thu';
+    if(vsBot&&turn==='O')t='Bot dang suy nghi...';
+    el.textContent=t;
+    el.className='turn-text'+(isMyTurn()?' my-turn':' enemy-turn');
+  }
+  document.getElementById('score-text').textContent=`X: ${scoreX} - O: ${scoreO}`;
+}
+
+function performUndo(){
+  if(!moveHistory.length)return;
+  const m=moveHistory.pop();board[m.r][m.c]=null;turn=m.turn;gameOver=false;winCells=[];
+  lastCell=moveHistory.length?[moveHistory[moveHistory.length-1].r,moveHistory[moveHistory.length-1].c]:null;
+  render();updateStatus();
+}
+function undoMove(){performUndo();if(gameMode==='online')sendData({type:'undo'})}
+function requestNewGame(){
+  if(gameMode==='online'){mySide=mySide==='X'?'O':'X'}
+  newGame();if(gameMode==='online')sendData({type:'newgame'})
+}
+function resign(){if(gameOver)return;if(!confirm('Ban chac chan muon xin thua?'))return;const w=gameMode==='online'?(mySide==='X'?'O':'X'):(turn==='X'?'O':'X');if(gameMode==='online')sendData({type:'resign'});endResign(w)}
+function endResign(winner){gameOver=true;if(winner==='X')scoreX++;else scoreO++;updateStatus();showWin(winner,true)}
+
+function showWin(winner,isResign){
+  const ov=document.getElementById('win-overlay');
+  document.getElementById('win-icon').textContent=winner==='draw'?'🤝':'🏆';
+  const t=document.getElementById('win-title');
+  if(winner==='draw'){t.textContent='HOA!';t.className='win-title draw'}
+  else{t.textContent=winner+' THANG!';t.className='win-title '+(winner==='X'?'x-win':'o-win')}
+  document.getElementById('win-sub').textContent=isResign?'Doi thu dau hang':'5 quan lien tiep';
+  ov.classList.add('active');
+}
+function closeWin(){document.getElementById('win-overlay').classList.remove('active')}
+
+// ============ BOT AI (Minimax + Alpha-Beta) ============
+const AI_DEPTH = 6;
+
+function botMove(){
+  if(gameOver||turn!=='O')return;
+  const move=findBestMove();
+  if(move)makeMove(move[0],move[1],false);
+}
+
+function getCandidates(b){
+  const set=new Set();
+  for(let r=0;r<boardSize;r++)for(let c=0;c<boardSize;c++){
+    if(!b[r][c])continue;
+    for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize&&!b[nr][nc])set.add(nr*boardSize+nc);
+    }
+  }
+  if(!set.size)return[[Math.floor(boardSize/2),Math.floor(boardSize/2)]];
+  return[...set].map(v=>[Math.floor(v/boardSize),v%boardSize]);
+}
+
+// Evaluate a line pattern for a player
+function evalLine(b,r,c,dr,dc,player){
+  let count=0,open=0,i;
+  // Forward
+  for(i=0;i<5;i++){const nr=r+dr*i,nc=c+dc*i;if(nr<0||nr>=boardSize||nc<0||nc>=boardSize)break;if(b[nr][nc]===player)count++;else if(!b[nr][nc]){open++;break}else break}
+  // Backward
+  for(i=1;i<5;i++){const nr=r-dr*i,nc=c-dc*i;if(nr<0||nr>=boardSize||nc<0||nc>=boardSize)break;if(b[nr][nc]===player)count++;else if(!b[nr][nc]){open++;break}else break}
+  return{count,open};
+}
+
+// Score entire board for a player
+function evalBoard(b,player){
+  const enemy=player==='X'?'O':'X';
+  let score=0;
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  const visited=new Set();
+  for(let r=0;r<boardSize;r++)for(let c=0;c<boardSize;c++){
+    if(b[r][c]!==player)continue;
+    for(const[dr,dc]of dirs){
+      const key=`${r},${c},${dr},${dc}`;if(visited.has(key))continue;visited.add(key);
+      const{count,open}=evalLine(b,r,c,dr,dc,player);
+      if(count>=5)score+=1000000;
+      else if(count===4&&open===2)score+=50000;
+      else if(count===4&&open===1)score+=8000;
+      else if(count===3&&open===2)score+=5000;
+      else if(count===3&&open===1)score+=800;
+      else if(count===2&&open===2)score+=400;
+      else if(count===2&&open===1)score+=100;
+      else if(count===1&&open===2)score+=20;
+    }
+  }
+  return score;
+}
+
+function evaluate(b){
+  return evalBoard(b,'O')*1.1-evalBoard(b,'X');
+}
+
+// Order candidates by quick score (best first for alpha-beta)
+function orderMoves(b,candidates,player){
+  const enemy=player==='X'?'O':'X';
+  return candidates.map(([r,c])=>{
+    let s=0;
+    b[r][c]=player;if(checkWinAt(b,r,c,player))s+=900000;b[r][c]=null;
+    b[r][c]=enemy;if(checkWinAt(b,r,c,enemy))s+=800000;b[r][c]=null;
+    s+=quickEval(b,r,c,player)+quickEval(b,r,c,enemy)*0.9;
+    return{r,c,s};
+  }).sort((a,b)=>b.s-a.s).map(m=>[m.r,m.c]);
+}
+
+function quickEval(b,r,c,player){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];let score=0;
+  let open3=0,open2=0;
+  for(const[dr,dc]of dirs){
+    let count=1,openL=0,openR=0;
+    // Forward
+    for(let i=1;i<5;i++){const nr=r+dr*i,nc=c+dc*i;if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize){if(b[nr][nc]===player)count++;else{if(!b[nr][nc])openR=1;break}}else break}
+    // Backward
+    for(let i=1;i<5;i++){const nr=r-dr*i,nc=c-dc*i;if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize){if(b[nr][nc]===player)count++;else{if(!b[nr][nc])openL=1;break}}else break}
+    const open=openL+openR;
+    if(count>=5)score+=1000000;
+    else if(count===4&&open===2)score+=100000;
+    else if(count===4&&open===1)score+=15000;
+    else if(count===3&&open===2){score+=12000;open3++}
+    else if(count===3&&open===1)score+=1500;
+    else if(count===2&&open===2){score+=800;open2++}
+    else if(count===2&&open===1)score+=150;
+    else if(count===1&&open===2)score+=30;
+  }
+  // Double-three = almost guaranteed win
+  if(open3>=2)score+=80000;
+  // Three + open-two combo = very strong
+  if(open3>=1&&open2>=1)score+=20000;
+  return score;
+}
+
+function checkWinAt(b,r,c,player){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(const[dr,dc]of dirs){
+    let count=1;
+    for(let i=1;i<5;i++){const nr=r+dr*i,nc=c+dc*i;if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize&&b[nr][nc]===player)count++;else break}
+    for(let i=1;i<5;i++){const nr=r-dr*i,nc=c-dc*i;if(nr>=0&&nr<boardSize&&nc>=0&&nc<boardSize&&b[nr][nc]===player)count++;else break}
+    if(count>=5)return true;
+  }
+  return false;
+}
+
+function minimax(b,depth,alpha,beta,isMax){
+  if(depth===0)return evaluate(b);
+
+  const player=isMax?'O':'X';
+  const candidates=getCandidates(b);
+  const ordered=orderMoves(b,candidates.slice(0,20),player); // limit candidates for speed
+
+  if(isMax){
+    let maxEval=-Infinity;
+    for(const[r,c]of ordered){
+      b[r][c]='O';
+      if(checkWinAt(b,r,c,'O')){b[r][c]=null;return 1000000+depth}
+      const ev=minimax(b,depth-1,alpha,beta,false);
+      b[r][c]=null;
+      maxEval=Math.max(maxEval,ev);
+      alpha=Math.max(alpha,ev);
+      if(beta<=alpha)break;
+    }
+    return maxEval;
+  }else{
+    let minEval=Infinity;
+    for(const[r,c]of ordered){
+      b[r][c]='X';
+      if(checkWinAt(b,r,c,'X')){b[r][c]=null;return-1000000-depth}
+      const ev=minimax(b,depth-1,alpha,beta,true);
+      b[r][c]=null;
+      minEval=Math.min(minEval,ev);
+      beta=Math.min(beta,ev);
+      if(beta<=alpha)break;
+    }
+    return minEval;
+  }
+}
+
+function findBestMove(){
+  const candidates=getCandidates(board);
+  if(!candidates.length)return[Math.floor(boardSize/2),Math.floor(boardSize/2)];
+
+  // Instant win
+  for(const[r,c]of candidates){board[r][c]='O';if(checkWinAt(board,r,c,'O')){board[r][c]=null;return[r,c]}board[r][c]=null}
+  // Instant block
+  for(const[r,c]of candidates){board[r][c]='X';if(checkWinAt(board,r,c,'X')){board[r][c]=null;return[r,c]}board[r][c]=null}
+
+  const ordered=orderMoves(board,candidates.slice(0,30),'O');
+  let best=ordered[0],bestScore=-Infinity;
+
+  for(const[r,c]of ordered.slice(0,20)){
+    board[r][c]='O';
+    const score=minimax(board,AI_DEPTH-1,-Infinity,Infinity,false);
+    board[r][c]=null;
+    if(score>bestScore){bestScore=score;best=[r,c]}
+    if(bestScore>900000)break; // found winning move
+  }
+  return best;
+}
+
+// ============ HINT ============
+function canUseHint(){
+  if(gameMode==='local')return true;
+  return isHost&&useAI;
+}
+
+function toggleHint(){
+  if(!canUseHint()){showToast('Ban khong co quyen su dung goi y');return}
+  hintEnabled=!hintEnabled;
+  document.getElementById('hint-btn').style.background=hintEnabled?'#eab308':'';
+  document.getElementById('hint-btn').style.color=hintEnabled?'#1a1a2e':'';
+  if(hintEnabled)calcHint();
+  else{hintCell=null;render()}
+}
+
+function calcHint(){
+  if(!hintEnabled||gameOver||!canUseHint())return;
+  if(gameMode==='online'&&!isMyTurn()){hintCell=null;render();return}
+  const player=turn;
+  let best=null,bestScore=-Infinity;
+  const candidates=getCandidates(board);
+  const enemy=player==='X'?'O':'X';
+  for(const[r,c]of candidates){
+    board[r][c]=player;const win=checkWinAt(board,r,c,player);board[r][c]=null;
+    if(win){best=[r,c];break}
+    board[r][c]=enemy;const block=checkWinAt(board,r,c,enemy);board[r][c]=null;
+    if(block){best=[r,c];bestScore=999999;continue}
+    const s=quickEval(board,r,c,player)*1.1+quickEval(board,r,c,enemy);
+    if(s>bestScore){bestScore=s;best=[r,c]}
+  }
+  hintCell=best;
+  render();
+}
+
+function handleClick(r,c){
+  if(gameOver||board[r][c]||!isMyTurn())return;
+  makeMove(r,c,true);
+}
+
+newGame();
+</script>
+</body>
+</html>
