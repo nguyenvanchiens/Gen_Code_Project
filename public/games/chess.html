@@ -71,6 +71,7 @@
 
     .btn-create { background: #81b64c; color: white; }
     .btn-join { background: #3b82f6; color: white; }
+    .btn-bot { background: #8e6bc9; color: white; }
 
     .lobby-section { margin-top: 20px; display: none; }
     .lobby-section.active { display: block; }
@@ -702,7 +703,7 @@
     <div id="lobby-menu">
       <button class="lobby-btn btn-create" onclick="showAdminAuth()">Tao phong</button>
       <button class="lobby-btn btn-join" onclick="showJoin()">Vao phong</button>
-      <!-- bot mode hidden -->
+      <button class="lobby-btn btn-bot" onclick="startVsBot()">&#129302; Danh voi bot</button>
     </div>
 
     <div class="lobby-section" id="lobby-admin">

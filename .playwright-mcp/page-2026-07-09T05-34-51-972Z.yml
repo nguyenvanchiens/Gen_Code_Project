@@ -1,0 +1,50 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e10]: Da copy!
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]: ♚
+      - generic [ref=e14]: Den
+    - generic [ref=e16]:
+      - generic [ref=e414] [cursor=pointer]: ♜
+      - generic [ref=e416] [cursor=pointer]: ♞
+      - generic [ref=e418] [cursor=pointer]: ♝
+      - generic [ref=e420] [cursor=pointer]: ♛
+      - generic [ref=e422] [cursor=pointer]: ♚
+      - generic [ref=e424] [cursor=pointer]: ♝
+      - generic [ref=e426] [cursor=pointer]: ♞
+      - generic [ref=e428] [cursor=pointer]: ♜
+      - generic [ref=e430] [cursor=pointer]: ♟
+      - generic [ref=e432] [cursor=pointer]: ♟
+      - generic [ref=e434] [cursor=pointer]: ♟
+      - generic [ref=e437] [cursor=pointer]: ♟
+      - generic [ref=e439] [cursor=pointer]: ♟
+      - generic [ref=e441] [cursor=pointer]: ♟
+      - generic [ref=e443] [cursor=pointer]: ♟
+      - generic [ref=e456] [cursor=pointer]: ♟
+      - generic [ref=e466] [cursor=pointer]: ♙
+      - generic [ref=e479] [cursor=pointer]: ♙
+      - generic [ref=e481] [cursor=pointer]: ♙
+      - generic [ref=e483] [cursor=pointer]: ♙
+      - generic [ref=e485] [cursor=pointer]: ♙
+      - generic [ref=e488] [cursor=pointer]: ♙
+      - generic [ref=e490] [cursor=pointer]: ♙
+      - generic [ref=e492] [cursor=pointer]: ♙
+      - generic [ref=e494] [cursor=pointer]: ♖
+      - generic [ref=e496] [cursor=pointer]: ♘
+      - generic [ref=e498] [cursor=pointer]: ♗
+      - generic [ref=e500] [cursor=pointer]: ♕
+      - generic [ref=e502] [cursor=pointer]: ♔
+      - generic [ref=e504] [cursor=pointer]: ♗
+      - generic [ref=e506] [cursor=pointer]: ♘
+      - generic [ref=e508] [cursor=pointer]: ♖
+    - generic [ref=e113]:
+      - generic [ref=e114]: ♔
+      - generic [ref=e115]: Trang
+      - generic [ref=e316]: Ban
+    - generic [ref=e116]:
+      - button "↩ Hoan tac" [ref=e117] [cursor=pointer]
+      - button "⚔ Cau hoa" [ref=e118] [cursor=pointer]
+      - generic [ref=e119]: "Luot: Trang"
+      - button "⚑ Xin thua" [ref=e120] [cursor=pointer]
+      - button "Van moi" [ref=e121] [cursor=pointer]
+    - generic [ref=e123] [cursor=pointer]: ▼ Lich su nuoc di
